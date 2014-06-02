@@ -9,6 +9,7 @@ describe "Authentication" do
 
   	it { should have_content('Sign in') }
   	it { should have_title('Sign in') }
+    it { should_not have_link('Users',      href: users_path) }
   end
 
   describe "signin" do
@@ -37,9 +38,33 @@ describe "Authentication" do
   		it { should have_link('Sign out',		href: signout_path) }
   		it { should_not have_link('Sign in',	href: signin_path) }
 
+      describe "trying to sign up again" do
+
+        describe "by accessing the Users#new page" do
+          before do
+            get new_user_path
+            specify { expect(response).to redirect_to(root_url) }
+            it { should have_selector('div.alert.alert-notice', text: "You're already signed in") }
+          end
+        end
+
+        describe "by trying to submit via the create action" do
+          valid_attributes = { name: "Dup User", email: "dup@example.com", password: "foobar",
+                                    password_confirmation: "foobar" }
+
+          before do
+            post users_path(valid_attributes)
+            specify { expect(response).to redirect_to(root_url) }
+            it { should have_selector('div.alert.alert-notice', text: "You're already signed in") }
+          end
+        end
+      end
+
       describe "followed by signout" do
         before { click_link "Sign out" }
         it { should have_link('Sign in') }
+        it { should_not have_link('Profile',    href: user_path(user)) }
+        it { should_not have_link('Settings',   href: edit_user_path(user)) }
       end
   	end
   end
@@ -62,6 +87,21 @@ describe "Authentication" do
           it "should render the desired protected page" do
             expect(page).to have_title('Edit user')
           end
+
+          describe "when signing in again" do
+            before do
+              click_link "Sign out"
+              visit signin_path
+              fill_in "Email",        with: user.email
+              fill_in "Password",     with: user.password
+              click_button "Sign in"
+            end
+
+            it "should render the default (profile) page" do
+              expect(page).to have_title(user.name)
+            end
+          end
+
         end
       end
 
