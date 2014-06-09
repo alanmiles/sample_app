@@ -17,11 +17,11 @@ describe "StaticPages" do
     it_should_behave_like "all static pages"
     it { should_not have_title('| Home') }
 
-    describe "for sign-in users" do
+    describe "for signed-in users" do
       let(:user) { FactoryGirl.create(:user) }
       before do
-        FactoryGirl.create(:micropost, user: user, content: "Lorem ipsum")
-        FactoryGirl.create(:micropost, user: user, content: "Dolor sic amet")
+        @post1 = FactoryGirl.create(:micropost, user: user, content: "Lorem ipsum")
+        @post2 = FactoryGirl.create(:micropost, user: user, content: "Dolor sic amet")
         sign_in user
         visit root_path
       end
@@ -30,6 +30,41 @@ describe "StaticPages" do
         user.feed.each do |item|
           expect(page).to have_selector("li##{item.id}", text: item.content)
         end
+      end
+
+      describe "micropost count" do
+        
+        describe "plural" do
+          it { should have_content("2 microposts") }
+        end
+
+        describe "singular" do
+          before { click_link('delete', match: :first) }
+          it { should have_content("1 micropost") }
+        
+          describe "zero posts" do
+            before { click_link('delete', match: :first) }
+            it { should have_content("0 microposts") }
+          end
+        end  
+      end
+
+      describe "micropost pagination" do
+
+        before do
+          30.times { FactoryGirl.create(:micropost, user: user) }
+          visit root_path
+        end
+        after(:all) { Micropost.delete_all }
+
+        it { should have_selector('div.pagination') }
+
+        it "should list each micropost" do
+            user.feed.paginate(page: 1).each do |mpost|
+            page.should have_selector("li##{mpost.id}", text: mpost.content)
+          end
+        end
+
       end
     end
   end
