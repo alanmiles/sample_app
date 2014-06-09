@@ -200,6 +200,12 @@ input {
   }
 }
 
+.countdown {
+  display: inline;
+  padding-left: 10px;
+  color: $grayLight;
+}
+
 .content {
   display: block;
 }
